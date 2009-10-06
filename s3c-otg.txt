@@ -1,0 +1,96 @@
+Bus Hound 5.00 capture. Complements of www.perisoft.net
+
+  Device - Device ID (followed by the endpoint for USB devices)
+            (21) SEC SOC SMDK Board
+  Phase  - Phase Type
+            CTL   USB control transfer       
+            DI    Data in                    
+            DO    Data out                   
+  Data   - Hex dump of the data transferred
+  Descr  - Description of the phase
+  Cmd... - Position in the captured data
+  Delta  - Elapsed time from the previous phase to the current phase
+
+
+Device  Phase  Data                                                Description       Cmd.Phase.Ofs(rep)  Delta
+------  -----  --------------------------------------------------  ----------------  ------------------  -----
+  21.0  CTL    80 06 00 01  00 00 12 00                            GET DESCRIPTOR           1.1.0         11sc  
+  21.0  DI     12 01 00 02  ff 00 00 40  e8 04 34 12  00 01 01 02  .......@..4.....         1.2.0        180us  
+               00 01                                               ..                       1.2.16              
+  21.0  CTL    80 06 00 02  00 00 09 02                            GET DESCRIPTOR           2.1.0         36us  
+  21.0  DI     09 02 20 00  01 01 00 c0  19 09 04 00  00 02 ff 00  .. .............         2.2.0        201us  
+               00 00 07 05  81 02 00 02  00 07 05 02  02 00 02 00  ................         2.2.16              
+  21.0  CTL    00 09 01 00  00 00 00 00                            SET CONFIG               3.1.0         96us  
+  21.2  DO     00 00 e0 57  0a 00 03 00  13 00 00 ea  14 f0 9f e5  ...W............         4.1.0         25sc  
+               14 f0 9f e5  14 f0 9f e5  14 f0 9f e5  14 f0 9f e5  ................         4.1.16              
+
+
+==============================================================================================================
+HHD Software USB Monitor
+
+00000004	27.08.2008 11:19:22.242 +3.716	UP	UP	PnP: Device Connected
+000004: PnP Event: Device Connected (UP), 27.08.2008 11:19:22.242 +3.716
+The USB device has just been connected to the system.
+
+00000005	27.08.2008 11:19:22.242 +0.0	DOWN	0x00000001	URB_FUNCTION_GET_DESCRIPTOR_FROM_DEVICE
+000005: Get Descriptor Request (DOWN), 27.08.2008 11:19:22.242 +0.0
+Descriptor Type: Device
+Descriptor Index: 0x0
+Transfer Buffer Size: 0x12 bytes
+
+
+00000006	27.08.2008 11:19:22.242 +0.0	UP	0x00000000	URB_FUNCTION_CONTROL_TRANSFER
+ 12 01 00 02 FF 00 00 40 E8 04 34 12 00 01 01 02
+ 00 01
+Setup Packet
+ 80 06 00 01 00 00 12 00
+Recipient: Device
+Request Type: Standard
+Direction: Device->Host
+Request: 0x6 (GET_CONFIGURATION)
+Value: 0x100
+Index: 0x0
+Length: 0x12
+
+00000007	27.08.2008 11:19:22.242 +0.0	DOWN	0x00000000	URB_FUNCTION_GET_DESCRIPTOR_FROM_DEVICE
+000007: Get Descriptor Request (DOWN), 27.08.2008 11:19:22.242 +0.0
+Descriptor Type: Configuration
+Descriptor Index: 0x0
+Transfer Buffer Size: 0x209 bytes
+
+00000008	27.08.2008 11:19:22.242 +0.0	UP	0x00000000	URB_FUNCTION_CONTROL_TRANSFER
+000008: Control Transfer (UP), 27.08.2008 11:19:22.242 +0.0. Status: 0x00000000
+Pipe Handle: 0x82b11530
+
+ 09 02 20 00 01 01 00 C0 19 09 04 00 00 02 FF 00   
+ 00 00 07 05 81 02 00 02 00 07 05 02 02 00 02 00   
+
+Setup Packet
+ 80 06 00 02 00 00 09 02
+Recipient: Device
+Request Type: Standard
+Direction: Device->Host
+Request: 0x6 (GET_CONFIGURATION)
+Value: 0x200
+Index: 0x0
+Length: 0x209
+
+
+00000009	27.08.2008 11:19:22.242 +0.0	DOWN	0x00000000	URB_FUNCTION_SELECT_CONFIGURATION
+000009: Select Configuration (DOWN), 27.08.2008 11:19:22.242 +0.0
+Configuration Index: 1
+
+
+00000010	27.08.2008 11:19:22.262 +0.020	UP	UP	Internal: Pipe Info Transfer
+
+
+00000011	27.08.2008 11:19:22.262 +0.0	UP	0x00000000	URB_FUNCTION_SELECT_CONFIGURATION
+000011: Select Configuration (UP), 27.08.2008 11:19:22.262 +0.0. Status: 0x00000000
+Configuration Index: 1
+Configuration Handle: 0x82cd16a0
+
+00000012	27.08.2008 11:21:14.145 +111.883	DOWN	0x00000000	URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER
+00 00 5e 70 0a 00 30 00 13 00 00 ea....
+
+00000013	27.08.2008 11:21:14.145 +0.0	UP	0x00000000	URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER
+0x3000

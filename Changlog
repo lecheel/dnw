@@ -1,0 +1,11 @@
+# 2009/03/18 lechee
+  add native dnw_send.c (gcc dnw_send.c -o dnw_send)
+
+# 2009/03/09 lechee
+  Add dnw-send via command line
+  keep dnw-send without parameter with old style 
+  now you can send via "dnw-send -a0x57000000 -n/tftpboot/zImage"
+  
+  dnw_cmd add native u8 but still slow for hurge file 50MB for example
+  
+  

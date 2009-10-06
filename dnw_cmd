@@ -1,0 +1,323 @@
+#!/usr/bin/python
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import string
+import struct 
+import sys,os,time
+from getopt import getopt, GetoptError
+from glob import glob
+import fileinput
+#from msgBox import messageBox
+
+
+
+leCMD = "/tmp/jcmd"
+
+class MessageBox(gtk.Dialog):
+    def __init__(self, message="", buttons=(), pixmap=None,
+            modal= gtk.TRUE):
+        gtk.Dialog.__init__(self)
+        self.connect("destroy", self.quit)
+        self.connect("delete_event", self.quit)
+        if modal:
+            self.set_modal(gtk.TRUE)
+        hbox = gtk.HBox(spacing=5)
+        hbox.set_border_width(5)
+        self.vbox.pack_start(hbox)
+        hbox.show()
+        if pixmap:
+            self.realize()
+            pixmap = Pixmap(self, pixmap)
+            hbox.pack_start(pixmap, expand=gtk.FALSE)
+            pixmap.show()
+        label = gtk.Label(message)
+        hbox.pack_start(label)
+        label.show()
+        for text in buttons:
+            b = gtk.Button(text)
+            b.set_flags(gtk.CAN_DEFAULT)
+            b.set_data("user_data", text)
+            b.connect("clicked", self.click)
+            self.action_area.pack_start(b)
+            b.show()
+        self.ret = None
+
+    def quit(self, *args):
+        self.hide()
+        self.destroy()
+#        gtk.mainquit()
+
+    def click(self, button):
+        self.ret = button.get_data("user_data")
+#        self.quit()
+
+
+# create a message box, and return which button was pressed     
+
+def message_box(title="Message Box", message="", buttons=(), pixmap=None,
+        modal= gtk.TRUE):
+    win = MessageBox(message, buttons, pixmap=pixmap, modal=modal)
+    win.set_title(title)
+    win.show()
+    gtk.mainloop()
+    return win.ret
+
+def readCS():
+        file = open("/tmp/cs", mode='rb')
+        ck = struct.unpack('H', file.read(2))
+        file.close()
+        return ck
+
+class SizedFile(file):
+    def __len__(self):
+        oldpos = self.tell()
+        self.seek(0, 2)
+        length = self.tell()
+        self.seek(oldpos)
+        return length
+
+
+class lebtn:
+    def SizedFile(self,file):
+        return SizedFile(file)
+
+    def profile(self):
+        global u_address,u_send_name,k_address,k_send_name,r_address,r_send_name,a_address,a_send_name,e_address,e_send_name
+        print "reteive info ... "
+        dnwparams={}
+        if os.access(os.environ['HOME']+'/.dnwrc',os.R_OK):
+            for ln in open(os.environ['HOME']+'/.dnwrc').readlines():
+                if not ln[0] in ('#',';'):
+                    key,val=ln.strip().split("=",1)
+                    dnwparams[key.lower()]=val
+        for mandatory in ['u_address','u_fname','k_address','k_fname','r_address','r_fname','a_address','a_fname','e_address','e_fname']:
+            if mandatory not in dnwparams.keys():
+                open(os.environ['HOME']+'/.dnwrc','w').write('#Uncomment fields before use and type in correct credentials.\n#u_address=0x57e00000\n#u_fname=/tftpboot/u-boot.bin\n#k_address=0x57e00000\n#k_fname=/tftpboot/bzImage\n#r_address=0x57e00000\n#r_fname=/tftpboot/rootfs\n#a_address=0x57e00000\n#a_fname=/tftpboot/qt.cramfs\n#e_address=0x57e00000\n#e_fname=/tftpboot/qt.cramfs\n')
+                print 'Please point ~/.dnwrc config file to valid address and fname messages.'
+                sys.exit(0)
+
+        u_address = dnwparams['u_address']
+        u_send_name = dnwparams['u_fname']
+
+        k_address = dnwparams['k_address']
+        k_send_name = dnwparams['k_fname']
+
+        r_address = dnwparams['r_address']
+        r_send_name = dnwparams['r_fname']
+
+        a_address = dnwparams['a_address']
+        a_send_name = dnwparams['a_fname']
+
+        e_address = dnwparams['e_address']
+        e_send_name = dnwparams['e_fname']
+
+    def ckfile(self,filename):
+        """
+        still too slow for large file
+        """
+        checksum = 0
+        fh = open(filename)
+        while 1:
+            buf = fh.read(4096)
+            for buf0 in buf:
+                    checksum = checksum + ord(buf0)
+            if buf == "":
+                break
+        fh.close()
+        print "%x" %(checksum&0xffff)
+
+
+    def run_dnw(self,saddr,sname):
+        int_addr = int(saddr,16)
+        if os.access(sname,os.R_OK):
+            aa = self.SizedFile(sname)
+        else:
+            msg = "%s Must be existed QUiT.." % sname
+            print msg
+            message_box(title='!!! Message !!!',message=msg,)
+            return
+
+        binfile = open('/tmp/binfile','wb')
+        cmd = "u8 %s /tmp/cs" %(sname)
+        os.system(cmd)
+        ck = readCS()
+        # USB format Addr(4) + Size(4) + Data(n) + CS(2)
+        data = struct.pack('I',int_addr)
+        data1 = struct.pack('I',len(aa)+len(data)+6)
+        datacs = struct.pack('H',ck[0])
+        binfile.write(data)
+        binfile.write(data1)
+        lines = words = chars = 0
+        for line in fileinput.input(glob(sname)):
+            binfile.write(line)
+            lines += 1
+            words += len(line.split())
+            chars += len(line)
+        binfile.write(datacs)
+        binfile.close()
+        if os.access("/dev/dnwOTG",os.R_OK):
+            os.system("cat /tmp/binfile > /dev/dnwOTG")
+            print "%s is sended via USB DNW" % sname
+##            os.unlink("/tmp/binfile")
+        else:
+            msg = "dnwOTG Device not founded"
+            print msg
+#            messageBox(msg)
+            message_box(title='!!! Message !!!',message=msg,)
+##            if os.access("/tmp/binfile",os.R_OK):
+##                os.unlink("/tmp/binfile")
+
+    def write_jcmd(self,data):
+        if not (os.access(leCMD,os.F_OK)):
+            newfile = open(leCMD,"w")
+            newfile.write(data)
+            newfile.close()
+
+    def clean_jcmd(self):
+        if (os.access(leCMD,os.F_OK)):
+            os.unlink(leCMD)
+
+    def enter_callback(self, widget, entry):
+        entry_text = entry.get_text()
+        self.write_jcmd(entry_text)
+        print "Entry contents: %s\n" % entry_text
+        entry.set_text("")
+
+    # Our new improved callback.  The data passed to this method
+    # is printed to stdout.
+    def callback(self, widget, data):
+        if (data=="fun1"):
+            self.run_dnw(u_address,u_send_name)
+        elif (data=="fun2"):
+            self.run_dnw(k_address,k_send_name)
+        elif (data=="fun3"):
+            self.run_dnw(r_address,r_send_name)
+        elif (data=="fun4"):
+            self.run_dnw(a_address,a_send_name)
+        elif (data=="fun5"):
+            self.run_dnw(e_address,e_send_name)
+        elif (data=="fun6"):
+            self.run_dnw(k_address,k_send_name)
+            time.sleep(1)
+	    self.run_dnw(r_address,r_send_name)
+        else:
+            print "%s was pressed" % data
+        gtk.main_quit()
+
+    # another callback
+    def delete_event(self, widget, event, data=None):
+        gtk.main_quit()
+        return False
+
+    def __init__(self):
+        # Create a new window
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+
+        # This is a new call, which just sets the title of our
+        # new window to "Hello Buttons!"
+        self.window.set_title("DNW Commander")
+
+        # Here we just set a handler for delete_event that immediately
+        # exits GTK.
+        self.window.connect("delete_event", self.delete_event)
+
+
+        self.vbox = gtk.VBox(False, 0)
+        self.window.add(self.vbox)
+        self.vbox.show()
+
+
+        self.profile()
+
+        #self.entry = gtk.Entry()
+        #self.entry.set_max_length(100)
+        #self.entry.connect("activate", self.enter_callback, self.entry)
+        #self.entry.set_text("send 810foo@gmail.com")
+        #self.entry.insert_text(" hello how do you do...", len(self.entry.get_text()))
+        #self.entry.select_region(0, len(self.entry.get_text()))
+        #self.vbox.pack_start(self.entry, True, True, 0)
+        #self.entry.show()
+
+
+        # Sets the border width of the window.
+        self.window.set_border_width(20)
+        self.box1 = gtk.HBox(False, 0)
+#        self.window.add(self.box1)
+        self.vbox.add(self.box1)
+
+        # Creates a new button with the label "Button 1".
+        btn1 = "1. send u-boot.bin \t %s %s" %(u_address,u_send_name)
+        self.button1 = gtk.Button(btn1)
+        self.button1.connect("clicked", self.callback, "fun1")
+        self.box1.pack_start(self.button1, True, True, 0)
+        self.button1.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        btn2 = "2. send kernel \t %s %s" %(k_address,k_send_name)
+        self.button2 = gtk.Button(btn2)
+        self.button2.connect("clicked", self.callback, "fun2")
+        self.vbox.pack_start(self.button2, True, True, 0)
+        self.button2.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        # Do these same steps again to create a second button
+        btn3 = "3. send rootfs \t %s %s" %(r_address,r_send_name)
+        self.button3 = gtk.Button(btn3)
+        self.button3.connect("clicked", self.callback, "fun3")
+        self.vbox.pack_start(self.button3, True, True, 0)
+        self.button3.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        # Do these same steps again to create a second button
+        btn4 = "4. send qt.cramfs \t %s %s" %(a_address,a_send_name)
+        self.button4 = gtk.Button(btn4)
+        self.button4.connect("clicked", self.callback, "fun4")
+        self.vbox.pack_start(self.button4, True, True, 0)
+        self.button4.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        # Do these same steps again to create a second button
+        btn5 = "5. send U-boot from e-boot \t %s %s" %(e_address,e_send_name)
+        self.button5 = gtk.Button(btn5)
+        self.button5.connect("clicked", self.callback, "fun5")
+        self.vbox.pack_start(self.button5, True, True, 0)
+        self.button5.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        # Do these same steps again to create a second button
+        btn6 = "6. send KERNEL+RootFS"
+        self.button6 = gtk.Button(btn6)
+        self.button6.connect("clicked", self.callback, "fun6")
+        self.vbox.pack_start(self.button6, True, True, 0)
+        self.button6.show()
+
+        separator = gtk.HSeparator()
+        self.vbox.pack_start(separator, False, True, 5)
+        separator.show()
+
+        self.box1.show()
+        self.window.show()
+
+def main():
+    gtk.main()
+
+if __name__ == "__main__":
+    lebtn()
+    main()

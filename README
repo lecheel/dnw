@@ -1,0 +1,35 @@
+2009 MAR 04
+  fixed checksum failed USB DATA should be Addr(4) + Size(4) + Data(n) + CS(2) you can ref usbt-otg-hs.c
+  use u8 for u16_checksum creator
+---------------------------
+DNW kernel mode driver 
+v1.1 almost working on SAMSUNG 6410
+[0]Usage
+*\>sudo insmod dnw.ko
+*\>dnw-send(command mode) or dnw_cmd(GUI mode) 
+*Note:To edit ~/.dnwrc ,~/.dnwrc0
+
+[1]Data Flow
+*USB Host(X86) <-- DNW_OTG(S3C)
+
+[2]Packet Format
+*(RAM addr)(file size+8)(file content)
+e.g.
+00 00 E0 57 50 01 00 00 13 00 00 EA ... ...
+---RAMAddr- --file LEN- ---image content---
+
+[3]USB data capture from USB Monitor(USB Analyzer).
+*Refer to s3c-otg.txt
+
+[4]USB proc information and debug monitor in Linux kernel
+*proc information
+\>sudo mount -t usbfs none /proc/bus/usb/
+*debug monitor
+\>sudo insmod usbmon
+\>sudo mount -t debugfs none_debugs /sys/kernel/debug/
+\>sudo cat /sys/kernel/debug/usbmon/5t > /tmp/usb_debug.log & 
+
+
+if you have problem for .dnwrc 
+cp dnwrc to ~/.dnwrc
+

@@ -1,0 +1,11 @@
+#Uncomment fields before use and type in correct credentials.
+u_address=0xc0000000
+u_fname=/tftpboot/u-boot.bin
+k_address=0xc0000000
+k_fname=/tftpboot/zImage
+r_address=0xc0000000
+r_fname=/tftpboot/initrd.img.gz
+a_address=0xc0000000
+a_fname=/tftpboot/qt.cramfs
+e_address=0x57e00000
+e_fname=/tftpboot/u-boot.bin
